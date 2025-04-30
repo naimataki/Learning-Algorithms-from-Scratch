@@ -11,7 +11,7 @@ def compute_loss(theta, X_b, y): #expect X_b (X with bias)
     m = X_b.shape[0]
     predictions = X_b.dot(theta)
     errors = predictions - y
-    loss = (1/(2*m)) * (errors.T.dot(errors))
+    loss = (1/(2*m)) * (errors.T.dot(errors)) # (1/(2*m)) * np.sum(errors**2)
     return loss
 
 def gradient_step(X_b, y, theta, alpha):
@@ -44,7 +44,7 @@ def train_model(X, y, alpha=0.01, epochs=1000, method='batch'):
             indices = np.random.permutation(m)
             X_norm_b_shuffled = X_norm_b[indices]
             y_shuffled = y[indices]
-            epoch_loss_sum = 0
+            # epoch_loss_sum = 0
             for i in range(m):
                 xi = X_norm_b_shuffled[i:i+1] #shape (1, n+1)
                 yi = y_shuffled[i:i+1] #shape (1,)
@@ -64,7 +64,7 @@ def generate_synthetic_data(n_samples = 100, theta_true = 2, noise_std=0.1, bias
     y_true = X_b.dot(theta_full_true)  # Linear relationship (matrix multiplication)
     # Step 3: Add noise to the target values (random Gaussian noise)
     noise = np.random.randn(n_samples, 1) * noise_std
-    y = (y_true + noise).flatten()  # Final target values with noise, flatten to !D array (100,)
+    y = (y_true + noise).flatten()  # Final target values with noise, flatten to 1D array (100,)
     return X, y #return original X
 
 def plot_regression_line(X, y, theta, mean, std):
@@ -74,7 +74,7 @@ def plot_regression_line(X, y, theta, mean, std):
     X_norm = (X - mean) / (std + 1e-8) # Add epsilon for safety
     
     # 2. Add bias term
-    X_norm_b = X_norm.c_[np.ones((X_norm.shape[0], 1)), X_norm]
+    X_norm_b = np.c_[np.ones((X_norm.shape[0], 1)), X_norm]
 
     # 3. Make predictions using learned theta
     y_pred = X_norm_b.dot(theta)
@@ -83,7 +83,7 @@ def plot_regression_line(X, y, theta, mean, std):
     plt.scatter(X.flatten(), y.flatten(), color='blue', label='Data Points')
     
     # Plot the regression line
-    plt.plot(X.flatten(), y.flatten(), color='red', label='Regression Line')
+    plt.plot(X.flatten(), y_pred.flatten(), color='red', label='Regression Line')
     
     # Labels and title
     plt.xlabel('Feature (X)')
@@ -101,7 +101,7 @@ def plot_loss_curve(loss_history):
     epochs = range(len(loss_history))
     
     # Plot the loss history
-    plt.plot(epochs, loss_history, color='blue', label='Loss')
+    plt.plot(epochs, loss_history, color='purple', label='Loss')
     
     # Labels and title
     plt.xlabel('Epochs')
@@ -114,8 +114,22 @@ def plot_loss_curve(loss_history):
     # Display the plot
     plt.show()
 
-X, y = generate_synthetic_data(n_samples = 100, theta_true = 2, noise_std=0.1, bias=4)
-theta, loss_history = train_model(X, y, alpha=0.01, epochs=500, method='batch')
-print(loss_history[-1])
-plot_regression_line(X, y, theta)
+# --- Main Execution ---
+X, y = generate_synthetic_data(n_samples = 100, theta_true = 2, noise_std=0.5, bias=4)
+# Ensure y has the expected shape
+print(f"Shape of X: {X.shape}")
+print(f"Shape of y: {y.shape}")
+
+# train
+theta, loss_history, mean, std = train_model(X, y, alpha=0.1, epochs=100, method='batch')
+print(f"Final loss: {loss_history[-1]}")
+print(f"Learned Theta (bias, feature_coeff): {theta}")
+plot_regression_line(X, y, theta, mean, std)
 plot_loss_curve(loss_history)
+
+# Run SGD version
+# theta_sgd, loss_hist_sgd, mean_sgd, std_sgd = train_model(X, y, alpha=0.05, epochs=100, method='sgd')
+# print(f"\nSGD Final Loss: {loss_hist_sgd[-1]}")
+# print(f"SGD Learned Theta (bias, feature_coeff): {theta_sgd}")
+# plot_regression_line(X, y, theta_sgd, mean_sgd, std_sgd)
+# plot_loss_curve(loss_hist_sgd)
